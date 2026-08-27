@@ -401,10 +401,10 @@ export default function RegistrationForm() {
         <button
           type="button"
           onClick={handlePrimary}
-          disabled={submitting || (form.amount && form.amount > 0 && !isClient)}
+          disabled={submitting || (form.amount > 0 && !isClient)}
           className="w-full md:w-auto rounded bg-[#6b21a8] px-4 py-2 text-white disabled:opacity-50 hover:bg-[#581c9b]"
         >
-          {submitting ? "Processing…" : form.amount && form.amount > 0 ? "Pay & Register" : "Submit registration"}
+          {submitting ? "Processing…" : form.amount > 0 ? "Pay & Register" : "Submit registration"}
         </button>
 
         {message && <div className="text-sm text-[#2d6a2d]">{message}</div>}
