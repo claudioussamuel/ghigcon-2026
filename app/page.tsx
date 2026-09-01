@@ -16,6 +16,7 @@ export default function Home() {
               alt="GHIGCON flyer"
               width={800}
               height={520}
+              loading="eager"
               className="rounded shadow-sm"
             />
             <h1 className="mt-4 text-3xl font-semibold text-[#3b2f2f]">GHIGCON YGF 2026</h1>
