@@ -28,8 +28,18 @@ export default function Home() {
 
           <div>
             <div className="rounded bg-white p-6 border border-[#e6dccb]">
-              <h2 className="text-2xl font-semibold text-[#3b2f2f]">Register</h2>
-              <p className="mt-2 text-sm text-[#5a4b44]">Complete your attendee details.</p>
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-semibold text-[#3b2f2f]">Register</h2>
+                  <p className="mt-2 text-sm text-[#5a4b44]">Complete your attendee details.</p>
+                </div>
+                <a
+                  href="/admin"
+                  className="rounded-md border border-[#d9c9b3] bg-[#f8f2ea] px-3 py-2 text-xs font-medium text-[#3b2f2f] transition hover:bg-[#f1e7d9]"
+                >
+                  Admin view
+                </a>
+              </div>
               <div className="mt-4">
                 <RegistrationForm />
               </div>
