@@ -243,8 +243,8 @@ export default function RegistrationForm() {
   const [isClient, setIsClient] = useState(false);
   const [usePaystackPayment, setUsePaystackPayment] = useState<any>(null);
 
-  // Pricing cutoff: before 11 Sept 2026 => early prices
-  const cutoff = new Date(2026, 8, 11); // months are 0-indexed (8 = September)
+  // Pricing cutoff: before 8 Oct 2026 => early prices
+  const cutoff = new Date(2026, 9, 8); // months are 0-indexed (9 = October)
   const isEarly = Date.now() < cutoff.getTime();
 
   const basePrices: Record<string, number> = {
