@@ -243,14 +243,13 @@ export default function RegistrationForm() {
   const [isClient, setIsClient] = useState(false);
   const [usePaystackPayment, setUsePaystackPayment] = useState<any>(null);
 
-  // Pricing cutoff: before 8 Oct 2026 => early prices
-  const cutoff = new Date(2026, 9, 8); // months are 0-indexed (9 = October)
-  const isEarly = Date.now() < cutoff.getTime();
+  // Standard pricing is active; early-bird pricing has been removed.
+  const isEarly = false;
 
   const basePrices: Record<string, number> = {
-    ghig_member: isEarly ? 800 : 1000,
-    non_member: isEarly ? 1000 : 1200,
-    company_group: isEarly ? 700 : 900,
+    ghig_member: 1000,
+    non_member: 1200,
+    company_group: 900,
     international: 3000,
     student_member: 250,
     student_non_member: 300,
@@ -496,19 +495,9 @@ export default function RegistrationForm() {
         required
       >
         <option value="">Select registration type</option>
-        {isEarly ? (
-          <>
-            <option value="ghig_member">GHIG Member — GHS 800 (Early)</option>
-            <option value="non_member">Non-Member — GHS 1000 (Early)</option>
-            <option value="company_group">Company Group — GHS 700 (Early)</option>
-          </>
-        ) : (
-          <>
-            <option value="ghig_member">GHIG Member — GHS 1000 (After)</option>
-            <option value="non_member">Non-Member — GHS 1200 (After)</option>
-            <option value="company_group">Company Group — GHS 900 (After)</option>
-          </>
-        )}
+        <option value="ghig_member">GHIG Member — GHS 1000</option>
+        <option value="non_member">Non-Member — GHS 1200</option>
+        <option value="company_group">Company Group — GHS 900</option>
         <option value="international">International — GHS 3000</option>
         <option value="student_member">Student (Member) — GHS 250</option>
         <option value="student_non_member">Student (Non-member) — GHS 300</option>
