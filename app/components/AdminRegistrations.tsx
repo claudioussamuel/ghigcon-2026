@@ -4,17 +4,28 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
+type Attendee = {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  title?: string;
+  jobTitle?: string;
+};
+
 type RegistrationRecord = {
   id: string;
   email?: string;
   firstName?: string;
   lastName?: string;
+  title?: string;
+  jobTitle?: string;
   companyName?: string;
   registrationType?: string;
   amount?: number;
   paid?: boolean;
   payed?: boolean;
   createdAt?: string;
+  attendees?: Attendee[];
 };
 
 export default function AdminRegistrations() {
@@ -23,6 +34,22 @@ export default function AdminRegistrations() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+
+  const flattenedRegistrations = registrations.flatMap((person) => {
+    if (!Array.isArray(person.attendees) || person.attendees.length === 0) {
+      return [person];
+    }
+
+    return person.attendees.map((attendee, index) => ({
+      ...person,
+      id: `${person.id}-${index}`,
+      firstName: attendee.firstName || "",
+      lastName: attendee.lastName || "",
+      email: attendee.email || person.email || "",
+      title: attendee.title || person.title || "",
+      jobTitle: attendee.jobTitle || person.jobTitle || "",
+    }));
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -62,7 +89,7 @@ export default function AdminRegistrations() {
     };
   }, []);
 
-  const filteredRegistrations = registrations.filter((person) => {
+  const filteredRegistrations = flattenedRegistrations.filter((person) => {
     const fullName = `${person.firstName || ""} ${person.lastName || ""}`.trim().toLowerCase();
     const searchableText = [fullName, person.email || "", person.companyName || "", person.registrationType || ""]
       .join(" ")
@@ -173,9 +200,9 @@ export default function AdminRegistrations() {
       </div>
 
       <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-        <span>Showing {filteredRegistrations.length} of {registrations.length}</span>
+        <span>Showing {filteredRegistrations.length} of {flattenedRegistrations.length}</span>
         <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-medium text-white">
-          {registrations.length} total
+          {flattenedRegistrations.length} total
         </span>
       </div>
 

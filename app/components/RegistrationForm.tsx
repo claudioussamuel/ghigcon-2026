@@ -200,6 +200,15 @@ const COUNTRIES: { name: string; code: string; dial_code: string }[] = [
   { name: "Zimbabwe", code: "ZW", dial_code: "+263" },
 ];
 
+type CompanyAttendee = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  title: string;
+  jobTitle: string;
+  registrationType: string;
+};
+
 type FormState = {
   email: string;
   firstName: string;
@@ -217,7 +226,17 @@ type FormState = {
   registrationType: string;
   galaNight: boolean;
   amount: number;
+  attendees: CompanyAttendee[];
 };
+
+const emptyAttendee = (): CompanyAttendee => ({
+  firstName: "",
+  lastName: "",
+  email: "",
+  title: "",
+  jobTitle: "",
+  registrationType: "",
+});
 
 export default function RegistrationForm() {
   const [form, setForm] = useState<FormState>({
@@ -237,6 +256,7 @@ export default function RegistrationForm() {
     registrationType: "",
     galaNight: false,
     amount: 0,
+    attendees: [emptyAttendee()],
   });
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -249,11 +269,9 @@ export default function RegistrationForm() {
   const basePrices: Record<string, number> = {
     ghig_member: 1000,
     non_member: 1200,
-    company_group: 900,
     international: 3000,
     student_member: 250,
     student_non_member: 300,
-    volunteers: 250,
   };
 
   useEffect(() => {
@@ -272,6 +290,51 @@ export default function RegistrationForm() {
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((s) => ({ ...s, [key]: value }));
+  }
+
+  const isCompanyRegistration = form.registrationType === "company_group";
+
+  const attendeeCount = isCompanyRegistration ? Math.max(form.attendees.length || 1, 1) : 1;
+
+  function updateAttendee(index: number, key: keyof CompanyAttendee, value: string) {
+    setForm((s) => ({
+      ...s,
+      attendees: s.attendees.map((attendee, idx) =>
+        idx === index ? { ...attendee, [key]: value } : attendee
+      ),
+    }));
+  }
+
+  function getCompanyTotal(attendees: CompanyAttendee[], galaNight: boolean) {
+    return attendees.reduce((total, attendee) => {
+      const base = basePrices[attendee.registrationType] || 0;
+      return total + base + (galaNight ? 200 : 0);
+    }, 0);
+  }
+
+  function addAttendee() {
+    setForm((s) => {
+      const nextAttendees = [
+        ...s.attendees,
+        { firstName: "", lastName: "", email: "", title: "", jobTitle: "", registrationType: "" },
+      ];
+      return {
+        ...s,
+        attendees: nextAttendees,
+        amount: getCompanyTotal(nextAttendees, s.galaNight),
+      };
+    });
+  }
+
+  function removeAttendee(index: number) {
+    if (form.attendees.length <= 1) return;
+
+    const nextAttendees = form.attendees.filter((_, idx) => idx !== index);
+    setForm((s) => ({
+      ...s,
+      attendees: nextAttendees,
+      amount: getCompanyTotal(nextAttendees, s.galaNight),
+    }));
   }
 
   async function submitRegistration() {
@@ -320,6 +383,7 @@ export default function RegistrationForm() {
         registrationType: "",
         galaNight: false,
         amount: 0,
+        attendees: [emptyAttendee()],
       });
     } catch (err: any) {
       setMessage(`Submission failed — ${err?.message || "please try again."}`);
@@ -412,10 +476,21 @@ export default function RegistrationForm() {
 
   const handlePayAndRegister = async () => {
     // basic guard
-    if (!form.email || !form.firstName || !form.lastName || !form.registrationType) {
-      setMessage("Please complete required fields before paying.");
+    const hasValidAttendees = !isCompanyRegistration ||
+      (form.companyName && form.attendees.length > 0 && form.attendees.every((person) =>
+        person.firstName && person.lastName && person.email && person.title && person.registrationType
+      ));
+
+    if (!form.email || !form.registrationType || !hasValidAttendees) {
+      setMessage("Please complete the required contact and attendee information before paying.");
       return;
     }
+
+    if (!isCompanyRegistration && (!form.firstName || !form.lastName)) {
+      setMessage("Please complete your name before paying.");
+      return;
+    }
+
     if (!initializePayment) {
       setMessage("Payment system loading — try again shortly.");
       return;
@@ -486,10 +561,14 @@ export default function RegistrationForm() {
         value={form.registrationType}
         onChange={(e) => {
           const val = e.target.value;
+          const nextCount = val === "company_group" ? Math.max(form.attendees.length, 1) : 1;
           const base = basePrices[val] || 0;
-          const total = base + (form.galaNight ? 200 : 0);
+          const total = base * nextCount + (form.galaNight ? 200 * nextCount : 0);
           update("registrationType", val);
           update("amount", total);
+          if (val === "company_group" && form.attendees.length === 0) {
+            update("attendees", [emptyAttendee()]);
+          }
         }}
         className="rounded border border-[#e6dccb] bg-white p-2 text-[#3b2f2f]"
         required
@@ -497,12 +576,103 @@ export default function RegistrationForm() {
         <option value="">Select registration type</option>
         <option value="ghig_member">GHIG Member — GHS 1000</option>
         <option value="non_member">Non-Member — GHS 1200</option>
-        <option value="company_group">Company Group — GHS 900</option>
+        <option value="company_group">Company Group — multiple attendees</option>
         <option value="international">International — GHS 3000</option>
         <option value="student_member">Student (Member) — GHS 250</option>
         <option value="student_non_member">Student (Non-member) — GHS 300</option>
-        <option value="volunteers">Volunteers — GHS 250</option>
       </select>
+
+      {form.registrationType === "company_group" && (
+        <div className="rounded border border-[#e6dccb] bg-[#f9f5ef] p-3">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-[#3b2f2f]">Company attendees</p>
+            <button
+              type="button"
+              onClick={addAttendee}
+              className="rounded bg-[#3b2f2f] px-3 py-1.5 text-xs font-medium text-white"
+            >
+              + Add attendee
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {form.attendees.map((person, index) => (
+              <div key={`${index}-${person.firstName || "new"}`} className="rounded border border-[#ead8bc] bg-white p-3">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="text-sm font-medium text-[#3b2f2f]">Attendee {index + 1}</p>
+                  {form.attendees.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeAttendee(index)}
+                      className="text-xs text-red-600 underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <input
+                    required={isCompanyRegistration}
+                    placeholder="First name"
+                    value={person.firstName}
+                    onChange={(e) => updateAttendee(index, "firstName", e.target.value)}
+                    className="rounded border border-[#e6dccb] bg-white p-2 text-[#3b2f2f]"
+                  />
+                  <input
+                    required={isCompanyRegistration}
+                    placeholder="Last name"
+                    value={person.lastName}
+                    onChange={(e) => updateAttendee(index, "lastName", e.target.value)}
+                    className="rounded border border-[#e6dccb] bg-white p-2 text-[#3b2f2f]"
+                  />
+                  <input
+                    required={isCompanyRegistration}
+                    type="email"
+                    placeholder="Email"
+                    value={person.email}
+                    onChange={(e) => updateAttendee(index, "email", e.target.value)}
+                    className="rounded border border-[#e6dccb] bg-white p-2 text-[#3b2f2f] md:col-span-2"
+                  />
+                  <select
+                    required={isCompanyRegistration}
+                    value={person.registrationType}
+                    onChange={(e) => {
+                      updateAttendee(index, "registrationType", e.target.value);
+                      setForm((s) => ({
+                        ...s,
+                        amount: getCompanyTotal(s.attendees.map((attendee, idx) =>
+                          idx === index ? { ...attendee, registrationType: e.target.value } : attendee
+                        ), s.galaNight),
+                      }));
+                    }}
+                    className="rounded border border-[#e6dccb] bg-white p-2 text-[#3b2f2f]"
+                  >
+                    <option value="">Select attendee type</option>
+                    <option value="ghig_member">GHIG Member — GHS 1000</option>
+                    <option value="non_member">Non-Member — GHS 1200</option>
+                    <option value="international">International — GHS 3000</option>
+                    <option value="student_member">Student (Member) — GHS 250</option>
+                    <option value="student_non_member">Student (Non-member) — GHS 300</option>
+                  </select>
+                  <input
+                    placeholder="Title (Mr/Ms/Dr)"
+                    value={person.title}
+                    onChange={(e) => updateAttendee(index, "title", e.target.value)}
+                    className="rounded border border-[#e6dccb] bg-white p-2 text-[#3b2f2f]"
+                  />
+                  <input
+                    placeholder="Job role"
+                    value={person.jobTitle}
+                    onChange={(e) => updateAttendee(index, "jobTitle", e.target.value)}
+                    className="rounded border border-[#e6dccb] bg-white p-2 text-[#3b2f2f]"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <input
@@ -512,13 +682,14 @@ export default function RegistrationForm() {
           onChange={(e) => {
             const checked = e.target.checked;
             update("galaNight", checked);
-            // compute base from current registration type
-            const base = basePrices[form.registrationType] || 0;
-            update("amount", base + (checked ? 200 : 0));
+            const total = isCompanyRegistration
+              ? getCompanyTotal(form.attendees, checked)
+              : (basePrices[form.registrationType] || 0) + (checked ? 200 : 0);
+            update("amount", total);
           }}
           className="h-4 w-4"
         />
-        <label htmlFor="gala" className="text-sm text-[#5a4b44]">Add Gala Night (GHS 200)</label>
+        <label htmlFor="gala" className="text-sm text-[#5a4b44]">Add Gala Night (GHS 200 per attendee)</label>
       </div>
 
       <div className="mt-1 text-lg font-semibold text-[#3b2f2f]">Total: GHS {form.amount}</div>
