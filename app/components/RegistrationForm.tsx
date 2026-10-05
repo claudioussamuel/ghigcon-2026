@@ -206,7 +206,6 @@ type CompanyAttendee = {
   email: string;
   title: string;
   jobTitle: string;
-  registrationType: string;
 };
 
 type FormState = {
@@ -235,7 +234,6 @@ const emptyAttendee = (): CompanyAttendee => ({
   email: "",
   title: "",
   jobTitle: "",
-  registrationType: "",
 });
 
 export default function RegistrationForm() {
@@ -269,6 +267,7 @@ export default function RegistrationForm() {
   const basePrices: Record<string, number> = {
     ghig_member: 1000,
     non_member: 1200,
+    company_group: 900,
     international: 3000,
     student_member: 250,
     student_non_member: 300,
@@ -305,23 +304,23 @@ export default function RegistrationForm() {
     }));
   }
 
-  function getCompanyTotal(attendees: CompanyAttendee[], galaNight: boolean) {
-    return attendees.reduce((total, attendee) => {
-      const base = basePrices[attendee.registrationType] || 0;
-      return total + base + (galaNight ? 200 : 0);
-    }, 0);
+  function getCompanyTotal(attendees: CompanyAttendee[], galaNight: boolean, registrationType: string) {
+    if (registrationType === "company_group") {
+      const count = Math.max(attendees.length, 1);
+      return 900 * count + (galaNight ? 200 * count : 0);
+    }
+
+    const base = basePrices[registrationType] || 0;
+    return base + (galaNight ? 200 : 0);
   }
 
   function addAttendee() {
     setForm((s) => {
-      const nextAttendees = [
-        ...s.attendees,
-        { firstName: "", lastName: "", email: "", title: "", jobTitle: "", registrationType: "" },
-      ];
+      const nextAttendees = [...s.attendees, emptyAttendee()];
       return {
         ...s,
         attendees: nextAttendees,
-        amount: getCompanyTotal(nextAttendees, s.galaNight),
+        amount: getCompanyTotal(nextAttendees, s.galaNight, s.registrationType),
       };
     });
   }
@@ -333,7 +332,7 @@ export default function RegistrationForm() {
     setForm((s) => ({
       ...s,
       attendees: nextAttendees,
-      amount: getCompanyTotal(nextAttendees, s.galaNight),
+      amount: getCompanyTotal(nextAttendees, s.galaNight, s.registrationType),
     }));
   }
 
@@ -478,7 +477,7 @@ export default function RegistrationForm() {
     // basic guard
     const hasValidAttendees = !isCompanyRegistration ||
       (form.companyName && form.attendees.length > 0 && form.attendees.every((person) =>
-        person.firstName && person.lastName && person.email && person.title && person.registrationType
+        person.firstName && person.lastName && person.email && person.title
       ));
 
     if (!form.email || !form.registrationType || !hasValidAttendees) {
@@ -576,7 +575,7 @@ export default function RegistrationForm() {
         <option value="">Select registration type</option>
         <option value="ghig_member">GHIG Member — GHS 1000</option>
         <option value="non_member">Non-Member — GHS 1200</option>
-        <option value="company_group">Company Group — multiple attendees</option>
+        <option value="company_group">Company Group — GHS 900 per attendee</option>
         <option value="international">International — GHS 3000</option>
         <option value="student_member">Student (Member) — GHS 250</option>
         <option value="student_non_member">Student (Non-member) — GHS 300</option>
@@ -634,27 +633,6 @@ export default function RegistrationForm() {
                     onChange={(e) => updateAttendee(index, "email", e.target.value)}
                     className="rounded border border-[#e6dccb] bg-white p-2 text-[#3b2f2f] md:col-span-2"
                   />
-                  <select
-                    required={isCompanyRegistration}
-                    value={person.registrationType}
-                    onChange={(e) => {
-                      updateAttendee(index, "registrationType", e.target.value);
-                      setForm((s) => ({
-                        ...s,
-                        amount: getCompanyTotal(s.attendees.map((attendee, idx) =>
-                          idx === index ? { ...attendee, registrationType: e.target.value } : attendee
-                        ), s.galaNight),
-                      }));
-                    }}
-                    className="rounded border border-[#e6dccb] bg-white p-2 text-[#3b2f2f]"
-                  >
-                    <option value="">Select attendee type</option>
-                    <option value="ghig_member">GHIG Member — GHS 1000</option>
-                    <option value="non_member">Non-Member — GHS 1200</option>
-                    <option value="international">International — GHS 3000</option>
-                    <option value="student_member">Student (Member) — GHS 250</option>
-                    <option value="student_non_member">Student (Non-member) — GHS 300</option>
-                  </select>
                   <input
                     placeholder="Title (Mr/Ms/Dr)"
                     value={person.title}
@@ -682,9 +660,7 @@ export default function RegistrationForm() {
           onChange={(e) => {
             const checked = e.target.checked;
             update("galaNight", checked);
-            const total = isCompanyRegistration
-              ? getCompanyTotal(form.attendees, checked)
-              : (basePrices[form.registrationType] || 0) + (checked ? 200 : 0);
+            const total = getCompanyTotal(form.attendees, checked, form.registrationType);
             update("amount", total);
           }}
           className="h-4 w-4"
