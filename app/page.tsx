@@ -99,7 +99,13 @@ export default function Home() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <p className="font-semibold text-[#2e221f]">{hotel.name}</p>
-                        <span className="text-xs font-medium text-[#6f5242]">{hotel.phone}</span>
+                        <a
+                          href={`tel:${hotel.phone}`}
+                          className="text-xs font-medium text-[#6f5242] underline decoration-[#6f5242]/60 underline-offset-2"
+                          aria-label={`Call ${hotel.name}`}
+                        >
+                          {hotel.phone}
+                        </a>
                       </div>
 
                       <ul className="mt-3 space-y-1.5 text-sm text-[#5a4b44]">

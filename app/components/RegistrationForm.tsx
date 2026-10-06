@@ -223,7 +223,6 @@ type FormState = {
   postalCode: string;
   areaOfInterest: string;
   registrationType: string;
-  galaNight: boolean;
   amount: number;
   attendees: CompanyAttendee[];
 };
@@ -252,7 +251,6 @@ export default function RegistrationForm() {
     postalCode: "",
     areaOfInterest: "",
     registrationType: "",
-    galaNight: false,
     amount: 0,
     attendees: [emptyAttendee()],
   });
@@ -304,14 +302,13 @@ export default function RegistrationForm() {
     }));
   }
 
-  function getCompanyTotal(attendees: CompanyAttendee[], galaNight: boolean, registrationType: string) {
+  function getCompanyTotal(attendees: CompanyAttendee[], registrationType: string) {
     if (registrationType === "company_group") {
       const count = Math.max(attendees.length, 1);
-      return 900 * count + (galaNight ? 200 * count : 0);
+      return 900 * count;
     }
 
-    const base = basePrices[registrationType] || 0;
-    return base + (galaNight ? 200 : 0);
+    return basePrices[registrationType] || 0;
   }
 
   function addAttendee() {
@@ -320,7 +317,7 @@ export default function RegistrationForm() {
       return {
         ...s,
         attendees: nextAttendees,
-        amount: getCompanyTotal(nextAttendees, s.galaNight, s.registrationType),
+        amount: getCompanyTotal(nextAttendees, s.registrationType),
       };
     });
   }
@@ -332,7 +329,7 @@ export default function RegistrationForm() {
     setForm((s) => ({
       ...s,
       attendees: nextAttendees,
-      amount: getCompanyTotal(nextAttendees, s.galaNight, s.registrationType),
+      amount: getCompanyTotal(nextAttendees, s.registrationType),
     }));
   }
 
@@ -380,7 +377,6 @@ export default function RegistrationForm() {
         postalCode: "",
         areaOfInterest: "",
         registrationType: "",
-        galaNight: false,
         amount: 0,
         attendees: [emptyAttendee()],
       });
@@ -562,7 +558,7 @@ export default function RegistrationForm() {
           const val = e.target.value;
           const nextCount = val === "company_group" ? Math.max(form.attendees.length, 1) : 1;
           const base = basePrices[val] || 0;
-          const total = base * nextCount + (form.galaNight ? 200 * nextCount : 0);
+          const total = base * nextCount;
           update("registrationType", val);
           update("amount", total);
           if (val === "company_group" && form.attendees.length === 0) {
@@ -651,22 +647,6 @@ export default function RegistrationForm() {
           </div>
         </div>
       )}
-
-      <div className="flex items-center gap-3">
-        <input
-          id="gala"
-          type="checkbox"
-          checked={form.galaNight}
-          onChange={(e) => {
-            const checked = e.target.checked;
-            update("galaNight", checked);
-            const total = getCompanyTotal(form.attendees, checked, form.registrationType);
-            update("amount", total);
-          }}
-          className="h-4 w-4"
-        />
-        <label htmlFor="gala" className="text-sm text-[#5a4b44]">Add Gala Night (GHS 200 per attendee)</label>
-      </div>
 
       <div className="mt-1 text-lg font-semibold text-[#3b2f2f]">Total: GHS {form.amount}</div>
 
