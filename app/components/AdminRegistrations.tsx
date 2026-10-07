@@ -5,6 +5,7 @@ import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
 type Attendee = {
+  name?: string;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -14,6 +15,7 @@ type Attendee = {
 
 type RegistrationRecord = {
   id: string;
+  name?: string;
   email?: string;
   firstName?: string;
   lastName?: string;
@@ -36,13 +38,16 @@ export default function AdminRegistrations() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const flattenedRegistrations = registrations.flatMap((person) => {
+    const fallbackName = person.name || [person.firstName, person.lastName].filter(Boolean).join(" ").trim();
+
     if (!Array.isArray(person.attendees) || person.attendees.length === 0) {
-      return [person];
+      return [{ ...person, name: fallbackName || person.name || "" }];
     }
 
     return person.attendees.map((attendee, index) => ({
       ...person,
       id: `${person.id}-${index}`,
+      name: attendee.name || [attendee.firstName, attendee.lastName].filter(Boolean).join(" ").trim() || fallbackName || "",
       firstName: attendee.firstName || "",
       lastName: attendee.lastName || "",
       email: attendee.email || person.email || "",
@@ -90,7 +95,7 @@ export default function AdminRegistrations() {
   }, []);
 
   const filteredRegistrations = flattenedRegistrations.filter((person) => {
-    const fullName = `${person.firstName || ""} ${person.lastName || ""}`.trim().toLowerCase();
+    const fullName = (person.name || [person.firstName, person.lastName].filter(Boolean).join(" ").trim()).toLowerCase();
     const searchableText = [fullName, person.email || "", person.companyName || "", person.registrationType || ""]
       .join(" ")
       .toLowerCase();
@@ -117,7 +122,7 @@ export default function AdminRegistrations() {
     ];
 
     const rows = filteredRegistrations.map((person) => {
-      const name = `${person.firstName || ""} ${person.lastName || ""}`.trim();
+      const name = person.name || [person.firstName, person.lastName].filter(Boolean).join(" ").trim();
       const paid = person.paid || person.payed ? "Yes" : "No";
       const amount = typeof person.amount === "number" ? person.amount : 0;
       const createdAt = person.createdAt ? new Date(person.createdAt).toISOString() : "";
@@ -226,7 +231,7 @@ export default function AdminRegistrations() {
               {filteredRegistrations.map((person) => (
                 <tr key={person.id} className="hover:bg-slate-50">
                   <td className="px-4 py-3 font-medium text-slate-800">
-                    {person.firstName || ""} {person.lastName || ""}
+                    {person.name || [person.firstName, person.lastName].filter(Boolean).join(" ").trim() || "-"}
                   </td>
                   <td className="px-4 py-3 text-slate-700">{person.email || "-"}</td>
                   <td className="px-4 py-3 text-slate-700">

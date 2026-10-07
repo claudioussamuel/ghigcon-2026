@@ -338,10 +338,19 @@ export default function RegistrationForm() {
     setMessage(null);
 
     try {
+      const payload = {
+        ...form,
+        name: [form.firstName, form.lastName].filter(Boolean).join(" ").trim(),
+        attendees: form.attendees.map((attendee) => ({
+          ...attendee,
+          name: [attendee.firstName, attendee.lastName].filter(Boolean).join(" ").trim(),
+        })),
+      };
+
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -436,21 +445,28 @@ export default function RegistrationForm() {
 
     try {
       // 1) Persist to Firestore (collection: webinar-1) — client-side write
-      await addDoc(collection(db, "ghigcon-2026"), {
+      const payload = {
         ...form,
+        name: [form.firstName, form.lastName].filter(Boolean).join(" ").trim(),
+        attendees: form.attendees.map((attendee) => ({
+          ...attendee,
+          name: [attendee.firstName, attendee.lastName].filter(Boolean).join(" ").trim(),
+        })),
         pinCode,
         payed: true,
         paid: true,
         reference,
         amount: form.amount,
         createdAt: new Date().toISOString(),
-      });
+      };
+
+      await addDoc(collection(db, "ghigcon-2026"), payload);
 
       // 2) Call server API to trigger welcome email (server may validate further)
       await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, payed: true, reference, pinCode }),
+        body: JSON.stringify(payload),
       });
 
       setMessage("Payment successful — registration saved and email queued.");
