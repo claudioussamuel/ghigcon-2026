@@ -1,6 +1,8 @@
 import Image from "next/image";
 import RegistrationForm from "../app/components/RegistrationForm";
 
+const REGISTRATION_OPEN = false;
+
 export const metadata = {
   title: 'Ghicon',
 };
@@ -37,11 +39,23 @@ export default function Home() {
 
             <div className="space-y-6">
               <div className="rounded-[22px] border border-[#e7d8c2] bg-white p-5 shadow-[0_16px_35px_rgba(90,61,42,0.08)] sm:p-6">
-                <h2 className="text-2xl font-semibold text-[#2e221f]">Register</h2>
-                <p className="mt-2 text-sm text-[#5a4b44]">Complete your attendee details.</p>
-                <div className="mt-5">
-                  <RegistrationForm />
-                </div>
+                {REGISTRATION_OPEN ? (
+                  <>
+                    <h2 className="text-2xl font-semibold text-[#2e221f]">Register</h2>
+                    <p className="mt-2 text-sm text-[#5a4b44]">Complete your attendee details.</p>
+                    <div className="mt-5">
+                      <RegistrationForm />
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-2xl border border-[#e8d5b6] bg-[#f8f1e8] p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7d5d42]">Registration</p>
+                    <h2 className="mt-2 text-2xl font-semibold text-[#2e221f]">Portal closed</h2>
+                    <p className="mt-3 text-sm leading-6 text-[#5a4b44]">
+                      Registration for GHIGCON YGF 2026 is currently closed. Please check back later or contact the event team for updates.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="rounded-[22px] border border-[#e7d8c2] bg-[#fffdfb] p-5 shadow-[0_16px_35px_rgba(90,61,42,0.08)] sm:p-6">

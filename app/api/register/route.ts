@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { sendWelcomeEmail } from "../../../lib/mailer";
 
+const REGISTRATION_OPEN = false;
+
 export async function POST(req: Request) {
   try {
+    if (!REGISTRATION_OPEN) {
+      return NextResponse.json({ error: "Registration is currently closed." }, { status: 403 });
+    }
+
     const body = await req.json();
 
     // Minimal server-side validation
